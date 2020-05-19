@@ -1,0 +1,282 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="ie=edge">
+    <title>Document</title>
+    <style>
+        canvas {
+            border: 1px solid #606060;
+            background: #f1f1f1;
+        }
+    </style>
+</head>
+
+<body onload="starGame()">
+
+    <script>
+
+        //array of coordinate to draw the first part of snake 
+        let snake = [
+
+            { x: 150, y: 150 },//this will be the head of our sanke
+            { x: 140, y: 150 },//first part of body snake
+            { x: 130, y: 150 },//first part of body snake
+            { x: 120, y: 150 },//first part of body snake
+            { x: 110, y: 150 }//first part of body snake
+
+        ];
+
+        var dx = + 10; //horizontal velocity snake
+        var dy = 0; // vertical velocity of snake
+        myObstacles = []; // array of obstacles
+        
+        var foodX = 0; // coordinate of foodX
+        var foodY = 0; // coordinate of foodX
+
+        //this will init the game area, create the food and obstacles
+        function starGame() {
+
+            myComponent = new component(10, 10, 50, 150);
+            createFood();
+            myGameArea.start();
+            ctx = myGameArea.ctx;
+            obstacles();
+        }
+
+
+        //This object of our canvas init
+        myGameArea = {
+            canvas: document.createElement("canvas"),
+            start: function () {
+
+                this.canvas.width = 400;
+                this.canvas.height = 400;
+                this.frameNo = 0;
+                this.ctx = this.canvas.getContext("2d");
+                document.body.insertBefore(this.canvas, document.body.childNodes[0]);
+                var interval = setInterval(update, 100);
+
+                window.addEventListener('keydown', function (e) {
+                    myGameArea.key = e.keyCode;
+                })
+            },
+
+            clear: function () {
+                this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+            }
+
+
+
+        }
+
+
+        //we this functioon construtor to draw all component
+        function component(width, height, x, y) {
+
+            this.width = width;
+            this.height = height;
+            this.speedX = 0;
+            this.speedY = 0;
+            this.x = x;
+            this.y = y;
+
+            this.update = function () {
+                ctx.fillStyle = "#606060";
+                ctx.fillRect(this.x, this.y, this.width, this.height);
+            }
+
+            this.drawFood = function () {
+                ctx.fillStyle = "red";
+                ctx.fillRect(foodX, foodY, this.width, this.height);
+            }
+        }
+
+        //draw the snake
+        function drawSnakePart(snakepart) {
+
+            myGameArea.ctx.fillStyle = "lightgreen";
+            myGameArea.ctx.strokestyle = "darkgreen"
+            myGameArea.ctx.fillRect(snakepart.x, snakepart.y, 10, 10);
+            myGameArea.ctx.strokeRect(snakepart.x, snakepart.y, 10, 10);
+
+
+        }
+
+
+        //display the initial part of snake
+        function drawSnake() {
+            snake.forEach(drawSnakePart);
+        }
+
+
+        // grow the snake 
+        function advanceSnake() {
+            const head = {
+                x: snake[0].x + dx,
+                y: snake[0].y + dy
+
+            }
+
+
+            snake.unshift(head);
+
+            const didEatFood = snake[0].x == foodX && snake[0].y == foodY;
+
+            if (didEatFood) {
+                createFood();
+                //obstacles();
+            } else {
+                snake.pop();
+            }
+
+        }
+
+        //control the with keyBoard
+        function controlSnake() {
+            const goingRight = dx === 10;
+            const goingLeft = dx === -10;
+            const goingUp = dy === -10;
+            const goingDown = dy === 10;
+
+            if ((myGameArea.key && myGameArea.key == 37) && !goingRight) {
+                dx = -10;
+                dy = 0;
+            }
+
+            if ((myGameArea.key && myGameArea.key == 39) && !goingLeft) {
+                dx = 10;
+                dy = 0;
+            }
+
+            if ((myGameArea.key && myGameArea.key == 38) && !goingDown) {
+                dx = 0;
+                dy = -10;
+            }
+
+            if ((myGameArea.key && myGameArea.key == 40) && !goingUp) {
+                dx = 0;
+                dy = 10;
+            }
+        }
+        // limite area to circulation snake in canvas
+        function LimitArea() {
+
+            const hitLeftWall = snake[0].x < 0;
+            const hitRightWall = snake[0].x > myGameArea.canvas.width - 10;
+            const hitUpWall = snake[0].y < 0;
+            const hitBottomWall = snake[0].y > myGameArea.canvas.height - 10;
+
+            return hitBottomWall || hitLeftWall || hitRightWall || hitUpWall;
+        }
+
+
+        //create the obstacles
+        function obstacles() {
+            var x, y;
+
+
+
+
+            for (i = 0; i < 8; i++) {
+                x = randomTen(2, myGameArea.canvas.width);
+                y = randomTen(2, myGameArea.canvas.height);
+
+                myObstacles.push(new component(10, 100, x, y));
+
+
+            }
+
+        }
+
+        //random to genarate the x and y coordinate
+
+        function randomTen(min, max) {
+            return Math.round((Math.random() * (max - min) + min) / 10) * 10;
+        }
+
+
+        // verify if the snake colid the obstacles
+        function obstaclesCollid(objectColid) {
+
+
+
+            for (let i = 0; i < myObstacles.length; i++) {
+                var myLeft = snake[0].x;
+                var myright = snake[0].x + 10;
+                var mytop = snake[0].y;
+                var mybottom = snake[0].y + 10;
+
+
+                var otherleft = objectColid.x + 10;
+                var otherright = objectColid.x + objectColid.width - 10;
+                var othertop = objectColid.y + 10;
+                var otherbottom = objectColid.y + objectColid.height;
+                var crash = true;
+                if ((mybottom < othertop) || (mytop > otherbottom) || (myright < otherleft) || (myLeft > otherright)) {
+                    crash = false;
+                }
+
+            }
+
+            return crash;
+
+
+
+
+        }
+
+        //Create the food
+        function createFood() {
+            foodX = randomTen(0, myGameArea.canvas.width - 10);
+            foodY = randomTen(0, myGameArea.canvas.height - 10);
+
+            snake.forEach(function isFoodOnSnake(part) {
+
+
+                const fooIsOnSanke = part.x == foodX && part.y == foodY
+                if (fooIsOnSanke)
+
+                    createFood();
+
+
+
+
+
+            })
+
+        }
+
+        //Update the play
+
+        function update() {
+
+            if (LimitArea()) {
+                return;
+            }
+
+            for (i = 0; i < 8; i++) {
+                if (obstaclesCollid(myObstacles[i])) {
+                    return;
+                }
+            }
+            myGameArea.clear();
+
+            for (i = 0; i < 8; i++) {
+                myObstacles[i].update();
+            }
+
+            myComponent.drawFood();
+            controlSnake();
+            drawSnake();
+            advanceSnake();
+        }
+
+
+
+    </script>
+</body>
+
+</html>
